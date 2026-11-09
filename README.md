@@ -1,9 +1,58 @@
 # MemoryAstra
 
-Spaced-repetition website with calendar time travel. Review on day 0, 1, 2, 4, 7, 15 and 30.
+纯 HTML、CSS、JavaScript 的间隔复习网站，可直接部署到 GitHub Pages。无需安装依赖、无需 API Key、无需服务器。
 
-Serve locally: `python3 -m http.server 8000`, then open http://localhost:8000.
+## 部署到 GitHub Pages
 
-Data stays in your browser. Export a JSON backup before switching devices or URLs.
+1. 解压代码包。
+2. 在 GitHub 创建一个仓库，例如 `memory-garden`。
+3. 打开仓库，选择 **Add file → Upload files**，上传解压后的文件。`index.html` 必须在仓库根目录，不要只上传 ZIP 或把所有文件再套一层目录。
+4. 提交文件，然后进入 **Settings → Pages**。
+5. 在 **Build and deployment → Source** 选择 **Deploy from a branch**。
+6. 选择 **main** 分支和 **/(root)** 文件夹，点击 **Save**。
+7. 等待发布完成，在 Pages 设置页点击 **Visit site**。
 
-GitHub Pages: Settings → Pages → Deploy from a branch → main → /(root).
+官方说明：https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+
+部署所需文件：`index.html`、`style.css`、`core.js`、`app.js`、`galaxy.svg`。其余为说明和测试文件。所有资源使用相对路径，支持 GitHub 仓库子路径。不需要构建命令。
+
+## 使用
+
+- **记录背诵内容**：输入标题、可选科目、背诵日期和原文。一次保存是一条内容；可以一天保存多条。
+- **首次复习**：今天录入的内容在保存后 25 分钟到期；若跨越午夜，第一次任务显示在次日。补录过去日期的内容，其首次任务记在背诵当天。
+- **后续复习**：首次背诵日后第 1、2、4、7、15、30 天。全部相对首次背诵日计算，不会因晚完成而自动重排。
+- **复习清单**：正文直接完整显示，阅读后点击“完成本次复习”。每个轮次单独记录；漏掉的轮次进入“逾期待补”。同一条内容可能有多个待补轮次。
+- **时光机**：选择日期、点击月历、切换月份或点击前后一天。支持 1900–2100 年。跳转日期不会改动电脑时间或复习记录。回到今天才能标记完成或撤销完成。
+- **历史与未来**：展示该日安排及按当前完成记录推算的未完成任务，不是当时数据库的历史快照；未来任务来自已经录入的内容。
+- **全部内容**：查看、搜索、编辑、删除所有原文，点击每一轮的日期可直接跳转。编辑原文保留原日期及复习记录。
+- **数据备份**：定期“导出备份”；在另一台设备“导入”JSON。导入为完整替换，操作前有确认，请先导出目标设备数据。
+
+## 数据与边界
+
+- 文本和完成记录存在当前网站来源的浏览器 localStorage。刷新后保留；清除网站数据、无痕会话结束、浏览器损坏等可能丢失。请保留 JSON 备份。
+- 没有账号、云同步或后台推送。关闭网站时不会发通知；下次打开会重新计算到期/逾期任务。
+- GitHub Pages 只托管代码；背诵内容不会写入仓库或发送给服务器。不要将个人 JSON 备份上传到公开仓库。
+- 采用设备的本地日历日期，“今天”随设备时区变化；已安排的日历日期保持不变。首次25分钟任务使用实际时间戳。
+- 页面打开时每30秒更新到期状态和跨日状态。
+- 最后一次固定复习在第30天；之后原文仍可在“全部内容”找到。长期保持记忆可能需要继续复习。
+- 这是常用间隔复习安排，不是艾宾浩斯本人规定的通用最佳时间表。
+- 全部正文作为纯文本显示，保留换行；不执行 HTML/脚本。每条正文最多100000字符，备份导入上限10 MB；实际可保存总量取决于浏览器的 localStorage 配额。
+
+## 开发与验证
+
+- `core.js`：日期运算、复习任务、到期判断、导入验证。
+- `app.js`：界面、存储、编辑、完成、时光机、备份。
+- `style.css`：响应式布局；适配手机和桌面。
+- `core.test.cjs`：关键日期和数据验证测试。
+
+安装 Node.js 后可运行 `node --test core.test.cjs`。无需第三方依赖。
+
+已验证：七轮日期、跨月跨年、闰年、夏令时附近的日历运算、首次25分钟与跨午夜、逾期判断、备份数据往返与非法数据拒绝；浏览器实际检查新增、正文直接显示、完成、时光机及刷新后保存。移动端样式已编写，未在真实手机上测试。
+
+## 本次界面更新
+
+移除揭晓和收起操作，正文始终显示；使用 MemoryAstra 名称及简化银河 SVG 图标；采用简洁侧栏与文档式正文布局。保留原数据格式和存储键。
+
+更新时将代码文件覆盖到原来的 MemoryAstra 文件夹，在同一浏览器访问原地址（例如 http://localhost:8000），原记录会保留。可以先导出 JSON 备份。按 Ctrl+Shift+R 强制刷新以更新样式。
+
+本地预览：`cd ~/MemoryAstra && python3 -m http.server 8000`。
