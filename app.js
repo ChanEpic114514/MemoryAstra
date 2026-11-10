@@ -9,7 +9,25 @@ function node(tag,cls,text){const n=document.createElement(tag);if(cls)n.classNa
 function btn(text,fn,cls=''){const n=node('button',cls,text);n.type='button';n.onclick=fn;return n;}
 function formatDate(s){return new Date(s+'T12:00:00').toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'long'});}
 function go(s){if(!C.validDate(s)||s<'1900-01-01'||s>'2100-12-31'){toast('请选择 1900–2100 年间的日期。');return;}selected=s;month=s.slice(0,7);render();}
-function openEditor(e=null){editing=e?.id||null;$('form').reset();$('editorTitle').textContent=e?'编辑背诵内容':'新增背诵内容';$('title').value=e?.title||'';$('subject').value=e?.subject||'';$('body').value=e?.body||'';$('learned').value=e?.learned||C.dateKey();$('learned').max=C.dateKey();$('learned').disabled=!!e;$('formNote').textContent=e?'修改文字会保留原有复习日期和完成记录。':'今天的内容会在保存约 25 分钟后首次到期。也可补录过去的背诵。';$('editor').showModal();}
+
+// Count word-like segments; ignore spaces, punctuation and emoji.
+const wordSegmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' });
+
+function countWords(text) {
+  let count = 0;
+  for (const segment of wordSegmenter.segment(text)) {
+    if (segment.isWordLike) count++;
+  }
+  return count;
+}
+
+function updateWordCount() {
+  $('wordCount').textContent = countWords($('body').value).toLocaleString('zh-CN') + ' 词';
+}
+
+$('body').addEventListener('input', updateWordCount);
+
+function openEditor(e=null){editing=e?.id||null;$('form').reset();$('editorTitle').textContent=e?'编辑背诵内容':'新增背诵内容';$('title').value=e?.title||'';$('subject').value=e?.subject||'';$('body').value=e?.body||'';updateWordCount();$('learned').value=e?.learned||C.dateKey();$('learned').max=C.dateKey();$('learned').disabled=!!e;$('formNote').textContent=e?'修改文字会保留原有复习日期和完成记录。':'今天的内容会在保存约 25 分钟后首次到期。也可补录过去的背诵。';$('editor').showModal();}
 function renderCalendar(all){$('calendar').replaceChildren();const [y,m]=month.split('-').map(Number);$('monthLabel').textContent=`${y} 年 ${m} 月`;const first=new Date(y,m-1,1);const blank=(first.getDay()+6)%7;for(let i=0;i<blank;i++)$('calendar').append(node('span'));const counts=new Map();for(const t of all)counts.set(t.date,(counts.get(t.date)||0)+1);const days=new Date(y,m,0).getDate();for(let d=1;d<=days;d++){const key=`${month}-${String(d).padStart(2,'0')}`;const n=btn(d,()=>go(key));if(key===selected)n.classList.add('selected');if(key===C.dateKey())n.classList.add('real-today');if(counts.has(key))n.classList.add('has-task');n.setAttribute('aria-label',`${key}，${counts.get(key)||0} 项复习`);if(key===selected)n.setAttribute('aria-current','date');$('calendar').append(n);}}
 function complete(t){if(selected!==C.dateKey()||(!t.done&&!C.due(t))){toast('请在真实到期后，于今天的清单中完成复习。');return;}const next=clone(),entry=next.entries.find(e=>e.id===t.entry.id);if(!entry)return;if(t.done)delete entry.completed[t.index];else entry.completed[t.index]=new Date().toISOString();if(persist(next)){render();toast(t.done?'已撤销完成记录':'已完成本次复习');}}
 function card(e,t=null){const n=node('article','card'+(t?.done?' completed':''));const top=node('div','card-top'),head=node('div');head.append(node('span','tag',e.subject||'未分类'),node('h3','',e.title));const stage=t?`第 ${C.OFFSETS[t.index]} 天 · 安排于 ${t.date}`:`背诵于 ${e.learned} · ${Object.keys(e.completed).length}/7 次已完成`;head.append(node('div','meta',stage));top.append(head);n.append(top);if(t?.done)n.append(node('p','meta','完成于 '+new Date(t.done).toLocaleString('zh-CN')));
